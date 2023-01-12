@@ -8,21 +8,129 @@ import {
   View,
   Image,
   Animated,
+  TouchableOpacity,
 } from "react-native";
 const { width, height } = Dimensions.get("window");
 import { getMovies } from "./api";
 import Genres from "./Genres";
 import Rating from "./Rating";
+import MaskedView from "@react-native-masked-view/masked-view";
+import Svg, { Rect } from "react-native-svg";
+import { LinearGradient } from "expo-linear-gradient";
+import { AntDesign } from "@expo/vector-icons";
+import Cards from "./Cards";
+
+const AnimatedSvg = Animated.createAnimatedComponent(Svg);
 
 const SPACING = 10;
 const ITEM_SIZE = width * 0.72;
 const SPACER_ITEM_SIZE = (width - ITEM_SIZE) / 2;
+const BACKDROP_HEIGHT = height * 0.6;
 
 const Loading = () => (
   <View style={styles.loadingContainer}>
     <Text style={styles.paragraph}>Loading...</Text>
   </View>
 );
+
+const Backdrop = ({ movies, scrollX }) => {
+  return (
+    <View style={{ position: "absolute", width, height: BACKDROP_HEIGHT }}>
+      <FlatList
+        data={movies}
+        keyExtractor={(item) => item.key}
+        renderItem={({ item, index }) => {
+          if (!item.backdrop) return null;
+
+          const inputRange = [(index - 2) * ITEM_SIZE, (index - 1) * ITEM_SIZE];
+
+          const translateX = scrollX.interpolate({
+            inputRange,
+            outputRange: [-width, 0],
+          });
+          return (
+            <>
+              <MaskedView
+                style={{ position: "absolute" }}
+                maskElement={
+                  <AnimatedSvg
+                    width={width}
+                    height={height}
+                    viewBox={`0 0 ${width} ${height}`}
+                    style={{ transform: [{ translateX }] }}
+                  >
+                    <Rect
+                      x="0"
+                      y="0"
+                      width={width}
+                      height={height}
+                      fill="red"
+                    />
+                  </AnimatedSvg>
+                }
+              >
+                <Image
+                  source={{ uri: item.backdrop }}
+                  style={{
+                    width,
+                    height: BACKDROP_HEIGHT,
+                    resizeMode: "cover",
+                  }}
+                />
+              </MaskedView>
+              {/* <Image
+                source={{ uri: item.backdrop }}
+                style={{ width, height: BACKDROP_HEIGHT, resizeMode: "cover" }}
+              /> */}
+            </>
+          );
+        }}
+      />
+      <LinearGradient
+        colors={["#00000050", "white"]}
+        style={{
+          width,
+          height: BACKDROP_HEIGHT,
+          position: "absolute",
+          bottom: 0,
+        }}
+      />
+    </View>
+  );
+};
+
+const BuyTicket = () => {
+  return (
+    <View
+      style={{
+        justifyContent: "center",
+        alignItems: "center",
+        paddingVertical: 50,
+      }}
+    >
+      <TouchableOpacity
+        style={{
+          backgroundColor: "black",
+          paddingHorizontal: 50,
+          paddingVertical: 20,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 18,
+            textTransform: "uppercase",
+            fontWeight: "bold",
+            color: "white",
+          }}
+        >
+          Buy Ticket
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 export default function App() {
   const [movies, setMovies] = useState([]);
@@ -43,9 +151,47 @@ export default function App() {
     return <Loading />;
   }
 
+  const renderItem = ({ item, index }) => {
+    if (!item.poster) {
+      return (
+        <View
+          style={{
+            width: SPACER_ITEM_SIZE,
+            // backgroundColor: "red",
+            // height: 200,
+          }}
+        />
+      );
+    }
+    const inputRange = [
+      (index - 2) * ITEM_SIZE,
+      (index - 1) * ITEM_SIZE,
+      index * ITEM_SIZE,
+    ];
+    const translateY = scrollX.interpolate({
+      inputRange,
+      outputRange: [100, 50, 100],
+    });
+    const scale = scrollX.interpolate({
+      inputRange,
+      outputRange: [1.5, 1, 1.5],
+    });
+    return (
+      <Cards
+        item={item}
+        index={index}
+        translateY={translateY}
+        scale={scale}
+        SPACING={SPACING}
+        ITEM_SIZE={ITEM_SIZE}
+      />
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
+      <Backdrop movies={movies} scrollX={scrollX} />
       <Animated.FlatList
         showsHorizontalScrollIndicator={false}
         data={movies}
@@ -62,60 +208,9 @@ export default function App() {
           { useNativeDriver: true }
         )}
         scrollEventThrottle={16}
-        renderItem={({ item, index }) => {
-          if (!item.poster) {
-            return (
-              <View
-                style={{
-                  width: SPACER_ITEM_SIZE,
-                  // backgroundColor: "red",
-                  // height: 200,
-                }}
-              />
-            );
-          }
-          const inputRange = [
-            (index - 2) * ITEM_SIZE,
-            (index - 1) * ITEM_SIZE,
-            index * ITEM_SIZE,
-          ];
-          const translateY = scrollX.interpolate({
-            inputRange,
-            outputRange: [0, -50, 0],
-          });
-          const scale = scrollX.interpolate({
-            inputRange,
-            outputRange: [1, 1.1, 1],
-          });
-          return (
-            <View style={{ width: ITEM_SIZE }}>
-              <Animated.View
-                style={{
-                  marginHorizontal: SPACING,
-                  padding: SPACING * 2,
-                  alignItems: "center",
-                  backgroundColor: "white",
-                  borderRadius: 34,
-                  transform: [{ translateY }],
-                }}
-              >
-                <Animated.Image
-                  source={{ uri: item.poster }}
-                  style={[styles.posterImage]}
-                />
-                <Text style={{ fontSize: 24 }} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Rating rating={item.rating} />
-                <Genres genres={item.genres} />
-                {/* <Text style={{ fontSize: 12 }} numberOfLines={3}>
-                  {item.description}
-                </Text> */}
-              </Animated.View>
-            </View>
-          );
-        }}
+        renderItem={renderItem}
       />
+      <BuyTicket />
     </View>
   );
 }
@@ -123,14 +218,19 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: "white",
+    // alignItems: "center",
+    // justifyContent: "center",
   },
   posterImage: {
     width: "100%",
-    height: 300,
+    height: "100%",
     marginBottom: SPACING,
     borderRadius: SPACING * 2,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

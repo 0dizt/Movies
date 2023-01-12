@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    marginVertical: 4,
+    marginVertical: 10,
   },
   genre: {
     borderRadius: 20,
