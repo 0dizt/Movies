@@ -12,12 +12,9 @@ import {
 } from "react-native";
 const { width, height } = Dimensions.get("window");
 import { getMovies } from "./api";
-import Genres from "./Genres";
-import Rating from "./Rating";
 import MaskedView from "@react-native-masked-view/masked-view";
 import Svg, { Rect } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
-import { AntDesign } from "@expo/vector-icons";
 import Cards from "./Cards";
 
 const AnimatedSvg = Animated.createAnimatedComponent(Svg);
@@ -119,9 +116,9 @@ const BuyTicket = () => {
       >
         <Text
           style={{
-            fontSize: 18,
+            fontSize: 14,
             textTransform: "uppercase",
-            fontWeight: "bold",
+            fontWeight: "500",
             color: "white",
           }}
         >
